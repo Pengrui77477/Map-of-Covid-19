@@ -38,9 +38,9 @@
           <div>较上日+ {{ store.chineAdd.dead }}</div>
         </section>
       </div>
-      <div class="box-left-pie">
-      </div>
-      <div class="date">截至日期：{{store.newDate}}</div>
+      <div class="box-left-discount"></div>
+      <div class="box-left-pie"></div>
+      <div class="date">截至日期：{{ store.newDate }}</div>
     </div>
 
     <div class="box-center">
@@ -59,7 +59,7 @@
           </tr>
         </thead>
         <tbody>
-        <!-- <transition-group enter-active-class="animate__animated animate__pulse" tag="tbody"> -->
+          <!-- <transition-group enter-active-class="animate__animated animate__pulse" tag="tbody"> -->
           <tr :key="item.name" v-for="item in store.item">
             <td align="center">{{ item.name }}</td>
             <td align="center">{{ item.today.confirm }}</td>
@@ -67,7 +67,7 @@
             <td align="center">{{ item.total.heal }}</td>
             <td align="center">{{ item.total.dead }}</td>
           </tr>
-        <!-- </transition-group> -->
+          <!-- </transition-group> -->
         </tbody>
       </table>
     </div>
@@ -76,7 +76,7 @@
 
 <script setup lang='ts'>
 import { useStore } from './stores'
-import { onMounted } from 'vue';
+import { onMounted,onBeforeUpdate } from 'vue';
 import * as echarts from 'echarts';
 import './assets/china.js'
 import { geoCoordMap } from './assets/geoMap'
@@ -88,14 +88,18 @@ const store = useStore();
 onMounted(async () => {
   await store.getList();
   initCharts();
-  console.log(store.item);
-
   initPie();
+  initDiscount();
+})
+
+onBeforeUpdate(()=>{
+  updataDiscount();
+  updataPie();
 })
 
 const initCharts = () => {
   // console.log('+++>',store.areaTree.children);
-  
+
   const city = store.areaTree;
   store.item = store.cityDetail[2].children
   const data = city.map(v => {
@@ -253,7 +257,7 @@ const initPie = () => {
         type: 'pie',
         radius: [0, 150],
 
-        data: store.cityDetail.map(value => {
+        data: store.item.map(value => {
           return {
             value: value.total.nowConfirm,
             name: value.name
@@ -265,6 +269,126 @@ const initPie = () => {
 
 }
 
+const initDiscount = () => {
+  const discount = echarts.init(document.querySelector(".box-left-discount") as HTMLElement);
+  console.log(discount);
+  
+  discount.setOption({
+    // title: {
+    //   text: 'Stacked Line'
+    // },
+    tooltip: {
+      trigger: 'axis'
+    },
+    // legend: {
+    //   data: ['Email', 'Union Ads', 'Video Ads', 'Direct', 'Search Engine']
+    // },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    toolbox: {
+      feature: {
+        saveAsImage: {}
+      }
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: (store.item.filter(x => x.total.nowConfirm !==0)).map(value => value.name)
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        name: '当前确诊',
+        type: 'line',
+        stack: 'Total',
+        data: (store.item.filter(x => x.total.nowConfirm !==0)).map(value => value.total.nowConfirm)
+      }
+    ]
+  })
+}
+
+
+const updataDiscount = ()=>{
+  const discount = echarts.getInstanceByDom(document.querySelector(".box-left-discount") as HTMLElement);
+  discount?.setOption({
+    tooltip: {
+      trigger: 'axis'
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    toolbox: {
+      feature: {
+        saveAsImage: {}
+      }
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: (store.item.filter(x => x.total.nowConfirm > 0)).map(value => value.name)
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        name: '当前确诊',
+        type: 'line',
+        stack: 'Total',
+        data: (store.item.filter(x => x.total.nowConfirm > 0)).map(value => value.total.nowConfirm)
+      }
+    ]
+  })
+   
+}
+
+const updataPie =() =>{
+  const pie = echarts.getInstanceByDom((document.querySelector('.box-left-pie') as HTMLElement));
+  pie?.setOption({
+    color: ['#37a2da', '#32c5e9', '#9fe6b8', '#ffdb5c', '#ff9f7f', '#fb7293', '#e7bcf3', '#8378ea'],
+    tooltip: {
+      trigger: 'item',
+      formatter: '{a} <br/>{b} : {c} ({d}%)',
+    },
+    toolbox: {
+      show: true,
+    },
+    legend: {
+      x: '80%', //水平位置，【left\center\right\数字】
+      y: '350', //垂直位置，【top\center\bottom\数字】
+      align: 'left', //字在图例的左边或右边【left/right】
+      orient: 'vertical', //图例方向【horizontal/vertical】
+      icon: 'circle', //图例形状【circle\rect\roundRect\triangle\diamond\pin\arrow\none】
+      textStyle: {
+        color: '#8C8C8C',
+      },
+      // height:150
+    },
+    series: [
+      {
+        name: '当前确诊数量',
+        type: 'pie',
+        radius: [0, 150],
+
+        data: (store.item.filter(x => x.total.nowConfirm > 0)).map(value => {
+          return {
+            value: value.total.nowConfirm,
+            name: value.name
+          }
+        }).splice(2)
+      },
+    ],
+  })
+}
 </script>
 
 <style lang='less'>
@@ -297,6 +421,7 @@ body,
     flex-direction: column;
     // justify-content: space-around;
     align-items: center;
+
     &-card {
       display: grid;
       grid-template-columns: auto auto auto;
@@ -324,8 +449,10 @@ body,
       height: 350px;
       margin-top: 20px;
     }
-    &-date{
 
+    &-discount {
+      width: 100%;
+      height: 300px;
     }
   }
 
