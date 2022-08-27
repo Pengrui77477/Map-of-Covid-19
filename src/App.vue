@@ -90,11 +90,14 @@ onMounted(async () => {
   initCharts();
   initPie();
   initDiscount();
+  
+  
 })
 
 onBeforeUpdate(()=>{
   updataDiscount();
   updataPie();
+  console.log(store.item);
 })
 
 const initCharts = () => {
@@ -253,16 +256,16 @@ const initPie = () => {
     },
     series: [
       {
-        name: '当前确诊数量',
+        name: '当前新增',
         type: 'pie',
         radius: [0, 150],
 
-        data: store.item.map(value => {
+        data: (store.item.filter(v => v.today.confirm > 0)).map(value => {
           return {
-            value: value.total.nowConfirm,
+            value: value.today.confirm,
             name: value.name
           }
-        }).splice(2)
+        })
       },
     ],
   })
@@ -304,7 +307,7 @@ const initDiscount = () => {
     },
     series: [
       {
-        name: '当前确诊',
+        name: '累计确诊',
         type: 'line',
         stack: 'Total',
         data: (store.item.filter(x => x.total.nowConfirm !==0)).map(value => value.total.nowConfirm)
@@ -341,7 +344,7 @@ const updataDiscount = ()=>{
     },
     series: [
       {
-        name: '当前确诊',
+        name: '累计确诊',
         type: 'line',
         stack: 'Total',
         data: (store.item.filter(x => x.total.nowConfirm > 0)).map(value => value.total.nowConfirm)
@@ -375,16 +378,16 @@ const updataPie =() =>{
     },
     series: [
       {
-        name: '当前确诊数量',
+        name: '当前新增',
         type: 'pie',
         radius: [0, 150],
 
-        data: (store.item.filter(x => x.total.nowConfirm > 0)).map(value => {
+        data: (store.item.filter(v => v.today.confirm > 0)).map(value => {
           return {
-            value: value.total.nowConfirm,
+            value: value.today.confirm,
             name: value.name
           }
-        }).splice(2)
+        })
       },
     ],
   })
